@@ -1,0 +1,9 @@
+ 
+Make the undo into an array or list (very easy the way I have it set up, just plug it into the undo functions)
+Make undo use a full state struct, so everything can be restored.
+Add redo (push old undos to the redo list, clear redo list when something is changed)
+List of open sounds
+
+What's up with the file save?  If I click Save, then Cancel, it creates a messed up file.
+
+How would I draw the waveform?  It'd be nice to see, but probably a hassle to do.
