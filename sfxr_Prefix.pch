@@ -1,0 +1,27 @@
+//
+// Prefix header for all source files of the 'sfxr' target in the 'sfxr' project
+//
+
+#ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <UIKit/UIKit.h>
+    #import <MessageUI/MFMailComposeViewController.h>
+#endif
+
+#include <OpenAl/al.h>
+#include <OpenAL/alc.h>
+
+#ifdef __cplusplus
+    #include <cstdlib>
+    #include <cmath>
+    #include <cstdio>
+    #include <ctime>
+    #include <cstring>
+    #include <iostream>
+    #include <fstream>
+    #include <string>
+    #include <vector>
+    #include <algorithm>
+#endif
+
+typedef short sint16;

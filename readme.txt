@@ -4,6 +4,9 @@ sfxr - sound effect generator
    by DrPetter, 2007-12-14
     developed for LD48#10
 -----------------------------
+        iPhoneOS port
+       by Chris Gassib
+-----------------------------
 
 
 Basic usage:
