@@ -12,23 +12,34 @@ class AudioInterface
 private:
     static const unsigned int BufferSampleCount;
     static const unsigned int BufferSize;
+    static const unsigned int BufferCount;
     
     SampleSourceFunctor* SampleSource;
 
     // OpenAL data:
     ALCdevice*  alcDevice;
     ALCcontext* alcContext;
-    ALuint audioBuffers[2]; // front and back buffers
-    ALuint audioSource;     // audio source
+    std::vector<ALuint> audioBuffers;   // queue buffers
+    ALuint audioSource;                 // audio source
     bool qEnd;
     pthread_mutex_t mutex;
 
+    typedef std::vector<unsigned char> SampleBuffer;
+    std::vector<SampleBuffer> staticSampleBuffers;
+
     // OpenAL audio code:
     void EmptySampleQueue();
-    bool IsPlaying();
-    bool Playback();
+    bool IsStopped();
     bool Stream(ALuint buffer);
-    bool StreamUpdate();
+
+    // Pointer for the extension function: alBufferDataStatic
+    //  see: OpenAL/oalStaticBufferExtension.h
+    static alBufferDataStaticProcPtr alBufferDataStatic;
+
+    // This is a fallback function just in case we're unable to make use
+    //  of the Apple OpenAL extension: alBufferDataStatic.  Don't call this directly.
+    static ALvoid AL_APIENTRY myBufferDataStatic(const ALint bid, ALenum format, ALvoid* data,
+        ALsizei size, ALsizei freq);
 
 public:
     AudioInterface();

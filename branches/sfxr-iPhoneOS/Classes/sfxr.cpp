@@ -17,14 +17,30 @@ const unsigned int sfxr::fileVersion;
 
 const float PI = 3.14159265f;
 
+// Galois Linear feedback shift register function.
+// Straight from wikipedia.
+inline unsigned int lfsr()
+{
+    static unsigned int seed = 1;
+    return seed = (seed >> 1u) ^ (0u - (seed & 1u) & 0xd0000001u);
+}
+
+// Floating point noise function using the LFSR function above.
+//  Return values are in the range of -1.0 to 1.0.
+inline float flfsr()
+{
+    const float max = std::numeric_limits<unsigned int>::max();
+    return (static_cast<float>(lfsr()) / max * 2.0f) - 1.0f;
+}
+
 inline int rnd(int n)
 {
     return rand() % (n + 1);
 }
 
-inline float frnd(float range)
+inline float frnd(const float range)
 {
-	return static_cast<float>(rnd(10000)) / 10000.0f * range;
+    return static_cast<double>(rand()) / static_cast<double>(RAND_MAX) * range;
 }
 
 sfxr::sfxr()
@@ -614,7 +630,9 @@ void sfxr::SynthSample(int length, float* buffer, FILE* file)
 				phase%=period;
 				if(wave_type==3)
 					for(int i=0;i<32;i++)
-						noise_buffer[i]=frnd(2.0f)-1.0f;
+						noise_buffer[i]=flfsr();    // NOTE: The original sfxr used: frnd(2.0f)-1.0f
+                                                    //  as the noise function.  The iPhone CPU wasn't
+                                                    //  fast enough to keep up with the audio output.
 			}
 			// base waveform
 			float fp=(float)phase/period;

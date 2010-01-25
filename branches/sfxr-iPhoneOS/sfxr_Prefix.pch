@@ -10,6 +10,7 @@
 
 #include <OpenAl/al.h>
 #include <OpenAL/alc.h>
+#include <OpenAL/oalStaticBufferExtension.h>
 
 #ifdef __cplusplus
     #include <cstdlib>

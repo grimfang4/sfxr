@@ -49,7 +49,7 @@ const unsigned int sessionFileVersion = 1;
     
     [self restoreSession];
 
-    self.animationInterval = 1.0 / 30.0;
+    self.animationInterval = 1.0 / 60.0;
     [self startAnimation];
 }
 
@@ -60,7 +60,7 @@ const unsigned int sessionFileVersion = 1;
 
 - (void)applicationDidBecomeActive:(UIApplication*)application
 {
-    self.animationInterval = 1.0 / 30.0;
+    self.animationInterval = 1.0 / 60.0;
 }
 
 - (void)applicationWillTerminate:(UIApplication*)application
