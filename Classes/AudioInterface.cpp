@@ -11,12 +11,22 @@
 #include "SampleSourceFunctor.h"
 #include "AudioInterface.h"
 
-const unsigned int AudioInterface::BufferSampleCount = 4096 * 2;
+const unsigned int AudioInterface::BufferSampleCount = 4096 * 1;
 const unsigned int AudioInterface::BufferSize = BufferSampleCount * sizeof(sint16);
+const unsigned int AudioInterface::BufferCount = 2;
+
+alBufferDataStaticProcPtr AudioInterface::alBufferDataStatic = NULL;
 
 AudioInterface::AudioInterface()
 : SampleSource(NULL), qEnd(true)
 {
+    // Allocate memory for this application's sample buffers.
+    staticSampleBuffers.resize(BufferCount);
+    for (unsigned int i = 0; i < BufferCount; i++)
+    {
+        staticSampleBuffers[i].resize(BufferSize);
+    }
+
     // Do the OpenAL start up.
     alcDevice = alcOpenDevice(NULL); // select the "preferred device"
     if (NULL == alcDevice)
@@ -42,7 +52,8 @@ AudioInterface::AudioInterface()
 
     alGetError(); // clear error code
 
-    alGenBuffers(2, audioBuffers);
+    audioBuffers.resize(BufferCount);
+    alGenBuffers(BufferCount, &audioBuffers[0]);
     alGenSources(1, &audioSource);
 
     int errorCode = pthread_mutex_init(&mutex, NULL);
@@ -50,6 +61,28 @@ AudioInterface::AudioInterface()
     {
         abort();
     }
+
+    // Try to get a hold of the iPhone OpenAL extension(s).
+    if (NULL == alBufferDataStatic)
+    {
+        alBufferDataStatic =
+            reinterpret_cast<alBufferDataStaticProcPtr>(alGetProcAddress("alBufferDataStatic"));
+        if (NULL == alBufferDataStatic) // if (we didn't get the extension)
+        {
+            alBufferDataStatic = &AudioInterface::myBufferDataStatic; // link to our fallback function
+        }
+    }
+    
+    // Start up code:
+    EmptySampleQueue();
+
+    for (unsigned int i = 0; i < BufferCount; i++)
+    {
+        Stream(audioBuffers[i]);
+    }
+
+    alSourceQueueBuffers(audioSource, BufferCount, &audioBuffers[0]);
+    alSourcePlay(audioSource);
 }
 
 AudioInterface::~AudioInterface()
@@ -63,11 +96,20 @@ AudioInterface::~AudioInterface()
     alSourceStop(audioSource);
     EmptySampleQueue();
     alDeleteSources(1, &audioSource);
-    alDeleteBuffers(2, audioBuffers);
+    alDeleteBuffers(BufferCount, &audioBuffers[0]);
 
     alcMakeContextCurrent(NULL);
     alcDestroyContext(alcContext);
     alcCloseDevice(alcDevice);
+    
+    audioBuffers.clear();
+    staticSampleBuffers.clear();
+}
+
+ALvoid AL_APIENTRY AudioInterface::myBufferDataStatic(const ALint bid, ALenum format, ALvoid* data,
+    ALsizei size, ALsizei freq)
+{
+    alBufferData(bid, format, data, size, freq);
 }
 
 // This clears the audio buffer queue.
@@ -83,47 +125,27 @@ void AudioInterface::EmptySampleQueue()
     }
 }
 
-// This checks if the audio is currently playing.
-bool AudioInterface::IsPlaying()
+// This checks if the audio play back has stopped.
+bool AudioInterface::IsStopped()
 {
     ALenum state;
     alGetSourcei(audioSource, AL_SOURCE_STATE, &state);
-    return (state == AL_PLAYING);
-}
-
-// This fills the audio buffers and starts them playing.
-bool AudioInterface::Playback()
-{
-    if (!qEnd)
-    {
-        return false;
-    }
-
-    if(IsPlaying())
-    {
-        return true;
-    }
-
-    //alSourceStop(audioSource);
-    EmptySampleQueue();
-
-    if (!Stream(audioBuffers[0]))
-        return false;
-
-    Stream(audioBuffers[1]);
-    
-    alSourceQueueBuffers(audioSource, 2, audioBuffers);
-    alSourcePlay(audioSource);
-
-    qEnd = false;
-
-    return true;
+    return (AL_STOPPED == state);
 }
 
 // This reads samples from the source.
 bool AudioInterface::Stream(ALuint buffer)
 {
-    unsigned char data[BufferSize];
+    // Figure out which static sample buffer to fill.
+    unsigned int bufferIndex = 0;
+    for (unsigned int i = 0; i < BufferCount; i++)
+    {
+        if (audioBuffers[i] == buffer)
+        {
+            bufferIndex = i;
+            break;
+        }
+    }
 
     bool isSamples = false;
 
@@ -136,11 +158,11 @@ bool AudioInterface::Stream(ALuint buffer)
         if (NULL != SampleSource)
         {
             SampleSourceFunctor& FillDataBuffer = *SampleSource;
-            isSamples = FillDataBuffer(data, BufferSize);
+            isSamples = FillDataBuffer(&(staticSampleBuffers[bufferIndex])[0], BufferSize);
         }
         else
         {
-            memset(data, 0, sizeof(data));
+            memset(&(staticSampleBuffers[bufferIndex])[0], 0, staticSampleBuffers[bufferIndex].size());
         }
     }
     errorCode = pthread_mutex_unlock(&mutex);
@@ -149,40 +171,9 @@ bool AudioInterface::Stream(ALuint buffer)
         std::cerr << "Failed to unlock mutex." << std::endl;
     }
 
-    alBufferData(buffer, AL_FORMAT_MONO16, data, BufferSize, 44100);
+    alBufferDataStatic(buffer, AL_FORMAT_MONO16, &(staticSampleBuffers[bufferIndex])[0], BufferSize, 44100);
 
     return isSamples;
-}
-
-// This streams samples in and swaps them into audio buffers.
-bool AudioInterface::StreamUpdate()
-{
-    if (qEnd)
-    {
-        return false;
-    }
-
-    ALint processed;
-    alGetSourcei(audioSource, AL_BUFFERS_PROCESSED, &processed);
-
-    bool streaming = false;
-    while(processed--)
-    {
-        ALuint buffer;
-        alSourceUnqueueBuffers(audioSource, 1, &buffer);
-
-        bool isStreamPlaying = Stream(buffer);
-        streaming |= isStreamPlaying;
-
-        alSourceQueueBuffers(audioSource, 1, &buffer);
-        
-        if (!isStreamPlaying)
-        {
-            qEnd = true;
-        }
-    }
-
-    return streaming;
 }
 
 void AudioInterface::SetSampleSource(SampleSourceFunctor* sampleSourceFunctor)
@@ -205,6 +196,22 @@ void AudioInterface::SetSampleSource(SampleSourceFunctor* sampleSourceFunctor)
 // This pumps samples for playback and starts the playing if it's not already.
 void AudioInterface::Update()
 {
-    StreamUpdate();
-    Playback();
+    if(IsStopped())
+    {
+        alSourcePlay(audioSource);
+    }
+
+    // Streams samples in and swaps them into audio buffers.
+    ALint processed;
+    alGetSourcei(audioSource, AL_BUFFERS_PROCESSED, &processed);
+
+    while(processed--)
+    {
+        ALuint buffer;
+        alSourceUnqueueBuffers(audioSource, 1, &buffer);
+
+        Stream(buffer);
+
+        alSourceQueueBuffers(audioSource, 1, &buffer);
+    }
 }
