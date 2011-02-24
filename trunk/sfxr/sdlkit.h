@@ -96,15 +96,23 @@ static void sdlupdate ()
 
 static bool ddkLock ()
 {
-	SDL_LockSurface(sdlscreen);
+	if(SDL_MUSTLOCK(sdlscreen))
+	{
+		if(SDL_LockSurface(sdlscreen) < 0)
+			return false;
+	}
 	ddkpitch = sdlscreen->pitch / (sdlscreen->format->BitsPerPixel == 32 ? 4 : 2);
 	ddkscreen16 = (Uint16*)(sdlscreen->pixels);
 	ddkscreen32 = (Uint32*)(sdlscreen->pixels);
+	return true;
 }
 
 static void ddkUnlock ()
 {
-	SDL_UnlockSurface(sdlscreen);
+	if(SDL_MUSTLOCK(sdlscreen))
+	{
+		SDL_UnlockSurface(sdlscreen);
+	}
 }
 
 static void ddkSetMode (int width, int height, int bpp, int refreshrate, int fullscreen, const char *title)

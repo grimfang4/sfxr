@@ -28,11 +28,7 @@
 
 */
 
-#ifdef WIN32
-#include "ddrawkit.h"
-#else
 #include "sdlkit.h"
-#endif
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -40,13 +36,7 @@
 #include <time.h>
 #include <math.h>
 
-#ifdef WIN32
-#include "DPInput.h" // WIN32
-#include "pa/portaudio.h"
-#include "fileselector.h" // WIN32
-#else
 #include "SDL.h"
-#endif
 
 #define rnd(n) (rand()%(n+1))
 
@@ -557,37 +547,15 @@ void SynthSample(int length, float* buffer, FILE* file)
 }
 
 DPInput *input;
-#ifdef WIN32
-PortAudioStream *stream;
-#endif
 bool mute_stream;
 
-#ifdef WIN32
-//ancient portaudio stuff
-static int AudioCallback(void *inputBuffer, void *outputBuffer,
-						 unsigned long framesPerBuffer,
-						 PaTimestamp outTime, void *userData)
-{
-	float *out=(float*)outputBuffer;
-	float *in=(float*)inputBuffer;
-	(void)outTime;
-
-	if(playing_sample && !mute_stream)
-		SynthSample(framesPerBuffer, out, NULL);
-	else
-		for(int i=0;i<framesPerBuffer;i++)
-			*out++=0.0f;
-	
-	return 0;
-}
-#else
 //lets use SDL instead
 static void SDLAudioCallback(void *userdata, Uint8 *stream, int len)
 {
 	if (playing_sample && !mute_stream)
 	{
 		unsigned int l = len/2;
-		float fbuf[l];
+		float* fbuf = new float[l];
 		memset(fbuf, 0, sizeof(fbuf));
 		SynthSample(l, fbuf, NULL);
 		while (l--)
@@ -597,10 +565,10 @@ static void SDLAudioCallback(void *userdata, Uint8 *stream, int len)
 			if (f > 1.0) f = 1.0;
 			((Sint16*)stream)[l] = (Sint16)(f * 32767);
 		}
+		delete[] fbuf;
 	}
 	else memset(stream, 0, len);
 }
-#endif
 
 bool ExportWAV(char* filename)
 {
@@ -608,7 +576,6 @@ bool ExportWAV(char* filename)
 	if(!foutput)
 		return false;
 	// write wav header
-	char string[32];
 	unsigned int dword=0;
 	unsigned short word=0;
 	fwrite("RIFF", 4, 1, foutput); // "RIFF"
@@ -1398,22 +1365,6 @@ void ddkInit()
 
 	ResetParams();
 
-#ifdef WIN32
-	// Init PortAudio
-	SetEnvironmentVariable("PA_MIN_LATENCY_MSEC", "75"); // WIN32
-	Pa_Initialize();
-	Pa_OpenDefaultStream(
-				&stream,
-				0,
-				1,
-				paFloat32,	// output type
-				44100,
-				512,		// samples per buffer
-				0,			// # of buffers
-				AudioCallback,
-				NULL);
-	Pa_StartStream(stream);
-#else
 	SDL_AudioSpec des;
 	des.freq = 44100;
 	des.format = AUDIO_S16SYS;
@@ -1423,7 +1374,6 @@ void ddkInit()
 	des.userdata = NULL;
 	VERIFY(!SDL_OpenAudio(&des, NULL));
 	SDL_PauseAudio(0);
-#endif
 }
 
 void ddkFree()
@@ -1431,12 +1381,5 @@ void ddkFree()
 	delete input;
 	free(ld48.data);
 	free(font.data);
-	
-#ifdef WIN32
-	// Close PortAudio
-    Pa_StopStream(stream);
-    Pa_CloseStream(stream);
-    Pa_Terminate();
-#endif
 }
 
