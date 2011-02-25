@@ -19,16 +19,10 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
    THE SOFTWARE.
 
-
-   Porting notes
-   -------------
-
-   Search for WIN32 to find windows-specific code
-   snippets which need to be replaced or removed.
-
 */
 
 #include "sdlkit.h"
+#include "tools.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -47,13 +41,6 @@ float frnd(float range)
 	return (float)rnd(10000)/10000*range;
 }
 
-struct Spriteset
-{
-	DWORD *data;
-	int width;
-	int height;
-	int pitch;
-};
 
 Spriteset font;
 Spriteset ld48;
@@ -211,51 +198,52 @@ bool LoadSettings(char* filename)
 	FILE* file=fopen(filename, "rb");
 	if(!file)
 		return false;
-
+	
+	size_t n;
 	int version=0;
-	fread(&version, 1, sizeof(int), file);
+	n = fread(&version, 1, sizeof(int), file);
 	if(version!=100 && version!=101 && version!=102)
 		return false;
 
-	fread(&wave_type, 1, sizeof(int), file);
+	n = fread(&wave_type, 1, sizeof(int), file);
 
 	sound_vol=0.5f;
 	if(version==102)
-		fread(&sound_vol, 1, sizeof(float), file);
+		n = fread(&sound_vol, 1, sizeof(float), file);
 
-	fread(&p_base_freq, 1, sizeof(float), file);
-	fread(&p_freq_limit, 1, sizeof(float), file);
-	fread(&p_freq_ramp, 1, sizeof(float), file);
+	n = fread(&p_base_freq, 1, sizeof(float), file);
+	n = fread(&p_freq_limit, 1, sizeof(float), file);
+	n = fread(&p_freq_ramp, 1, sizeof(float), file);
 	if(version>=101)
-		fread(&p_freq_dramp, 1, sizeof(float), file);
-	fread(&p_duty, 1, sizeof(float), file);
-	fread(&p_duty_ramp, 1, sizeof(float), file);
+		n = fread(&p_freq_dramp, 1, sizeof(float), file);
+	n = fread(&p_duty, 1, sizeof(float), file);
+	n = fread(&p_duty_ramp, 1, sizeof(float), file);
 
-	fread(&p_vib_strength, 1, sizeof(float), file);
-	fread(&p_vib_speed, 1, sizeof(float), file);
-	fread(&p_vib_delay, 1, sizeof(float), file);
+	n = fread(&p_vib_strength, 1, sizeof(float), file);
+	n = fread(&p_vib_speed, 1, sizeof(float), file);
+	n = fread(&p_vib_delay, 1, sizeof(float), file);
 
-	fread(&p_env_attack, 1, sizeof(float), file);
-	fread(&p_env_sustain, 1, sizeof(float), file);
-	fread(&p_env_decay, 1, sizeof(float), file);
-	fread(&p_env_punch, 1, sizeof(float), file);
+	n = fread(&p_env_attack, 1, sizeof(float), file);
+	n = fread(&p_env_sustain, 1, sizeof(float), file);
+	n = fread(&p_env_decay, 1, sizeof(float), file);
+	n = fread(&p_env_punch, 1, sizeof(float), file);
 
-	fread(&filter_on, 1, sizeof(bool), file);
-	fread(&p_lpf_resonance, 1, sizeof(float), file);
-	fread(&p_lpf_freq, 1, sizeof(float), file);
-	fread(&p_lpf_ramp, 1, sizeof(float), file);
-	fread(&p_hpf_freq, 1, sizeof(float), file);
-	fread(&p_hpf_ramp, 1, sizeof(float), file);
+	n = fread(&filter_on, 1, sizeof(bool), file);
+	n = fread(&p_lpf_resonance, 1, sizeof(float), file);
+	n = fread(&p_lpf_freq, 1, sizeof(float), file);
+	n = fread(&p_lpf_ramp, 1, sizeof(float), file);
+	n = fread(&p_hpf_freq, 1, sizeof(float), file);
+	n = fread(&p_hpf_ramp, 1, sizeof(float), file);
 	
-	fread(&p_pha_offset, 1, sizeof(float), file);
-	fread(&p_pha_ramp, 1, sizeof(float), file);
+	n = fread(&p_pha_offset, 1, sizeof(float), file);
+	n = fread(&p_pha_ramp, 1, sizeof(float), file);
 
-	fread(&p_repeat_speed, 1, sizeof(float), file);
+	n = fread(&p_repeat_speed, 1, sizeof(float), file);
 
 	if(version>=101)
 	{
-		fread(&p_arp_speed, 1, sizeof(float), file);
-		fread(&p_arp_mod, 1, sizeof(float), file);
+		n = fread(&p_arp_speed, 1, sizeof(float), file);
+		n = fread(&p_arp_mod, 1, sizeof(float), file);
 	}
 
 	fclose(file);
@@ -687,7 +675,7 @@ bool Slider(int x, int y, float& value, bool bipolar, const char* text)
 	DWORD tcol=0x000000;
 	if(wave_type!=0 && (&value==&p_duty || &value==&p_duty_ramp))
 		tcol=0x808080;
-	DrawText(x-4-strlen(text)*8, y+1, tcol, text);
+	DrawText(font, x-4-strlen(text)*8, y+1, tcol, text);
 	return result;
 }
 
@@ -714,7 +702,7 @@ bool Button(int x, int y, bool highlight, const char* text, int id)
 	}
 	DrawBar(x-1, y-1, 102, 19, color1);
 	DrawBar(x, y, 100, 17, color2);
-	DrawText(x+5, y+5, color3, text);
+	DrawText(font, x+5, y+5, color3, text);
 	if(current && hover && !mouse_left)
 		return true;
 	return false;
@@ -743,7 +731,7 @@ bool ButtonWH(int x, int y, int w, int h, bool highlight, const char* text, int 
 	}
 	DrawBar(x-1, y-1, w + 2, h + 2, color1);
 	DrawBar(x, y, w, h, color2);
-	DrawText(x+5, y+5, color3, text);
+	DrawText(font, x+5, y+5, color3, text);
 	if(current && hover && !mouse_left)
 		return true;
 	return false;
@@ -789,7 +777,7 @@ void DrawScreen()
 
 	ClearScreen(0xC0B090);
 
-	DrawText(10, 10, 0x504030, "GENERATOR");
+	DrawText(font, 10, 10, 0x504030, "GENERATOR");
 	for(int i=0;i<7;i++)
 	{
 		if(Button(5, 35+i*30, false, categories[i].name, 300+i))
@@ -959,7 +947,7 @@ void DrawScreen()
 		}
 	}
 	DrawBar(110, 0, 2, 480, 0x000000);
-	DrawText(120, 10, 0x504030, "MANUAL SETTINGS");
+	DrawText(font, 120, 10, 0x504030, "MANUAL SETTINGS");
 	DrawSprite(ld48, 8, 440, 0, 0xB0A080);
 	
 
@@ -995,7 +983,7 @@ void DrawScreen()
 		if(ButtonWH(490, 140, 17, 17, dragOnLeftClick, "", 101))
 			dragOnLeftClick = !dragOnLeftClick;
 	}
-	DrawText(515, 145, 0x000000, "DRAG BARS");
+	DrawText(font, 515, 145, 0x000000, "DRAG BARS");
 
 	DrawBar(5-1-1, 412-1-1, 102+2, 19+2, 0x000000);
 	if(Button(5, 412, false, "RANDOMIZE", 40))
@@ -1071,7 +1059,7 @@ void DrawScreen()
 		do_play=true;
 	}
 
-	DrawText(515, 170, 0x000000, "VOLUME");
+	DrawText(font, 515, 170, 0x000000, "VOLUME");
 	DrawBar(490-1-1+60, 180-1+5, 70, 2, 0x000000);
 	DrawBar(490-1-1+60+68, 180-1+5, 2, 205, 0x000000);
 	DrawBar(490-1-1+60, 180-1, 42+2, 10+2, 0xFF0000);
@@ -1083,7 +1071,7 @@ void DrawScreen()
 	if(Button(490, 290, false, "LOAD SOUND", 14))
 	{
 		char filename[256];
-		if(FileSelectorLoad(hWndMain, filename, 1)) // WIN32
+		if(FileSelectorLoad(filename, 1))
 		{
 			ResetParams();
 			LoadSettings(filename);
@@ -1093,7 +1081,7 @@ void DrawScreen()
 	if(Button(490, 320, false, "SAVE SOUND", 15))
 	{
 		char filename[256];
-		if(FileSelectorSave(hWndMain, filename, 1)) // WIN32
+		if(FileSelectorSave(filename, 1))
 			SaveSettings(filename);
 	}
 
@@ -1102,7 +1090,7 @@ void DrawScreen()
 	if(Button(490, 380, false, "EXPORT .WAV", 16))
 	{
 		char filename[256];
-		if(FileSelectorSave(hWndMain, filename, 0)) // WIN32
+		if(FileSelectorSave(filename, 0))
 			ExportWAV(filename);
 	}
 	char str[10];
@@ -1301,9 +1289,9 @@ bool keydown=false;
 
 bool ddkCalcFrame()
 {
-	input->Update(); // WIN32 (for keyboard input)
+	input->Update(); // (for keyboard input)
 
-	if(input->KeyPressed(DIK_SPACE) || input->KeyPressed(DIK_RETURN)) // WIN32 (keyboard input only for convenience, ok to remove)
+	if(input->KeyPressed(DIK_SPACE) || input->KeyPressed(DIK_RETURN)) // (keyboard input only for convenience, ok to remove)
 	{
 		if(!keydown)
 		{
@@ -1321,7 +1309,7 @@ bool ddkCalcFrame()
 
 	DrawScreen();
 
-	Sleep(5); // WIN32
+	SDL_Delay(5);
 	return true;
 }
 
@@ -1353,7 +1341,7 @@ void ddkInit()
 
 	ld48.width=ld48.pitch;
 
-	input=new DPInput(hWndMain, hInstanceMain); // WIN32
+	input=new DPInput;
 
 	strcpy(categories[0].name, "PICKUP/COIN");
 	strcpy(categories[1].name, "LASER/SHOOT");
