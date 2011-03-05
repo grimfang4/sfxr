@@ -4,9 +4,11 @@
 AC_PREREQ([2.64])
 AC_INIT([sfxr], [1.2.0], [grimfang4@gmail.com],[sfxr-1.2.0.tar],[http://code.google.com/p/sfxr])
 AM_INIT_AUTOMAKE(sfxr, 1.2.0)
+AM_CONFIG_HEADER(config.h:config.in)
 
 AC_CONFIG_SRCDIR([sdlkit.h])
-AC_CONFIG_HEADERS([config.h])
+# AC_CONFIG_HEADERS([config.h])
+
 
 # Checks for programs.
 AC_PROG_CXX
