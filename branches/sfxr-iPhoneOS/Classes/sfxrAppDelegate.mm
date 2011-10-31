@@ -30,7 +30,6 @@
 @synthesize tabBarController;
 
 @synthesize animationTimer;
-@synthesize animationInterval;
 
 @synthesize audioInterface;
 @synthesize mySfxr;
@@ -38,24 +37,23 @@
 const unsigned int sessionFileVersion = 1;
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
+    audioInterface = new AudioInterface;
+    mySfxr = new sfxr;
+    
     application.statusBarStyle = UIStatusBarStyleBlackOpaque;
-
+    
     // Add the tab bar controller's current view as a subview of the window
     [window addSubview:tabBarController.view];
 
-    audioInterface = new AudioInterface;
-    mySfxr = new sfxr;
     audioInterface->SetSampleSource(mySfxr);
     
     [self restoreSession];
-
-    self.animationInterval = 1.0 / 60.0;
-    [self startAnimation];
 }
 
 - (void)applicationWillResignActive:(UIApplication*)application
 {
-	self.animationInterval = 1.0 / 5.0;
+    [self stopAnimation];
+    [self saveSession];
 }
 
 - (void)applicationDidBecomeActive:(UIApplication*)application
@@ -119,14 +117,19 @@ const unsigned int sessionFileVersion = 1;
 	animationTimer = newTimer;
 }
 
+- (NSTimeInterval)animationInterval
+{
+    return animationInterval;
+}
+
 - (void)setAnimationInterval:(NSTimeInterval)interval
 {
 	animationInterval = interval;
 	if (animationTimer)
     {
 		[self stopAnimation];
-		[self startAnimation];
 	}
+    [self startAnimation];
 }
 
 - (void)restoreSession {

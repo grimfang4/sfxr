@@ -16,8 +16,6 @@
 const unsigned int fileVersion = 1;
 
 @interface LibraryViewController()
-    NSString* saveFile;
-    std::streampos recordSize;
 @end
 
 @implementation LibraryViewController

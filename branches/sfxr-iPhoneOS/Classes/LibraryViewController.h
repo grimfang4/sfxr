@@ -16,6 +16,8 @@ class sfxr;
     UITextField* saveTextField;
     sfxr* currentSoundFX;
 
+    NSString* saveFile;
+    std::streampos recordSize;
 }
 
 @property (nonatomic, readonly) UITextField* saveTextField;
