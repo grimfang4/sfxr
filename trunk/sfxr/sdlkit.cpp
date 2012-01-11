@@ -202,7 +202,7 @@ extern int vcurbutton;
 
 extern Spriteset font;
 
-std::string new_file()
+std::string new_file(const std::string& forced_extension)
 {
 	using namespace std;
 	SDL_EnableUNICODE(1);
@@ -256,12 +256,16 @@ std::string new_file()
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableUNICODE(0);
 	
-	// FIXME: Force .sfxr
+	//if(result.size() == 0)
+	//	throw runtime_error("New file name is empty string.");
+	
+	if(result.size() < 6 || result.substr(result.size()-1 - 4, string::npos) != forced_extension)
+		result += forced_extension;
 	
 	return result;
 }
 
-void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFile, bool& done)
+void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFile, bool& done, bool showNewButton)
 {
 	using namespace std;
 
@@ -293,9 +297,9 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 		done = true;
 	}
 	
-	if(Button(10, 160, false, "NEW FILE", 401))
+	if(showNewButton && Button(120, 10, false, "NEW FILE", 401))
 	{
-		string s = new_file();
+		string s = new_file(".sfxr");
 		if(s != "")
 		{
 			ioNew(s, true, true);
@@ -321,7 +325,7 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 }
 
 
-bool select_file (char *buf)
+bool select_file (char *buf, bool showNewButton)
 {
 	// FIXME: Needs directory browsing
 	
@@ -358,7 +362,7 @@ bool select_file (char *buf)
 		}
 		sdlupdate();
 		
-		DrawFileSelectScreen(files, buf, gotFile, done);
+		DrawFileSelectScreen(files, buf, gotFile, done, showNewButton);
 
 		SDL_Delay(5);
 		
@@ -366,9 +370,6 @@ bool select_file (char *buf)
 	}
 	return gotFile;
 }
-
-#define FileSelectorLoad(file,y) select_file(file)
-#define FileSelectorSave(file,y) select_file(file)
 
 void sdlquit ()
 {
