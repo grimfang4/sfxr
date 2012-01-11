@@ -25,24 +25,24 @@ find_package(SDL REQUIRED)
 include_directories(include ${SDL_INCLUDE_DIR})
 link_libraries(${SDL_LIBRARY})
 
-add_definitions("-Wall -pedantic")
+add_definitions("-Wall --pedantic -O2")
 
 set(SRC_FILES
-	main.cpp
-	sdlkit.cpp
-	tools.cpp
+	source/main.cpp
+	source/sdlkit.cpp
+	source/tools.cpp
 )
 
 add_executable(sfxr ${SRC_FILES})
 
 install(TARGETS sfxr
-        RUNTIME DESTINATION .)
-install(FILES font.tga ld48.tga sfxr.bmp readme.txt
-        DESTINATION share/sfxr)
-install(FILES sfxr.png
+        RUNTIME DESTINATION bin)
+install(FILES images/font.tga images/ld48.tga images/sfxr.bmp
+        DESTINATION share/sfxr/images)
+install(FILES images/sfxr.png
         DESTINATION share/icons/hicolor/48x48/apps)
-install(FILES sfxr.1
+install(FILES data/sfxr.1
         DESTINATION share/man/man1)
-install(FILES sfxr.desktop
+install(FILES data/sfxr.desktop
         DESTINATION share/applications)
 

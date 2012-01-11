@@ -7,4 +7,4 @@ LDFLAGS=`sdl-config --libs`
 
 bin_PROGRAMS = sfxr
 
-sfxr_SOURCES := main.cpp sdlkit.cpp tools.cpp sdlkit.h tools.h
+sfxr_SOURCES := source/main.cpp source/sdlkit.cpp source/tools.cpp source/sdlkit.h source/tools.h
