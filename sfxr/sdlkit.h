@@ -24,6 +24,7 @@
 #define SDLKIT_H
 
 #include "SDL.h"
+#include <string>
 
 
 #define ERROR(x) error(__FILE__, __LINE__, #x)
@@ -75,10 +76,11 @@ void ddkSetMode (int width, int height, int bpp, int refreshrate, int fullscreen
 
 //void selected_file (GtkWidget *button, GtkFileSelection *fs);
 
-bool select_file (char *buf);
+bool select_file (char *buf, bool showNewButton);
+std::string new_file(const std::string& forced_extension);
 
-#define FileSelectorLoad(file,y) select_file(file)
-#define FileSelectorSave(file,y) select_file(file)
+#define FileSelectorLoad(file,y) select_file(file, false)
+#define FileSelectorSave(file,y) select_file(file, true)
 
 void sdlquit ();
 

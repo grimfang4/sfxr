@@ -24,11 +24,12 @@
 #include "sdlkit.h"
 #include "tools.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
+#include <string>
 
 #include "SDL.h"
 
@@ -200,6 +201,7 @@ bool LoadSettings(char* filename)
 		return false;
 	
 	size_t n;
+	(void)n;
 	int version=0;
 	n = fread(&version, 1, sizeof(int), file);
 	if(version!=100 && version!=101 && version!=102)
@@ -558,7 +560,7 @@ static void SDLAudioCallback(void *userdata, Uint8 *stream, int len)
 	else memset(stream, 0, len);
 }
 
-bool ExportWAV(char* filename)
+bool ExportWAV(const char* filename)
 {
 	FILE* foutput=fopen(filename, "wb");
 	if(!foutput)
@@ -1089,9 +1091,11 @@ void DrawScreen()
 	DrawBar(490-1-2, 380-1-2, 102+4, 19+4, 0x000000);
 	if(Button(490, 380, false, "EXPORT .WAV", 16))
 	{
-		char filename[256];
-		if(FileSelectorSave(filename, 0))
-			ExportWAV(filename);
+		std::string filename = new_file(".wav");
+		//char filename[256];
+		//if(FileSelectorSave(filename, 0))
+		if(filename.size() > 0)
+			ExportWAV(filename.c_str());
 	}
 	char str[10];
 	sprintf(str, "%i HZ", wav_freq);

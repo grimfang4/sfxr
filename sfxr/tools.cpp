@@ -33,6 +33,7 @@ int LoadTGA(Spriteset& tiles, const char *filename)
 		return -1;
 	
 	int n;
+	(void)n;
 	n = fread(&id_length, 1, 1, file);
 	n = fread(crap, 1, 11, file);
 	width=0;
@@ -41,6 +42,7 @@ int LoadTGA(Spriteset& tiles, const char *filename)
 	n = fread(&height, 1, 2, file);	// height
 	n = fread(&byte, 1, 1, file);	// bits
 	channels=byte/8;
+	(void)channels;
 	n = fread(&byte, 1, 1, file);	// image descriptor byte (per-bit info)
 	for(i=0;i<id_length;i++)
 		n = fread(&byte, 1, 1, file);	// image description
