@@ -1,0 +1,16 @@
+You can build and install with either Automake or CMake.  Use CMake if you are not using Linux/Unix.
+
+Automake:
+./autogen.sh
+./configure
+make
+sudo make install
+
+CMake (not GUI):
+cmake -G Unix\ Makefiles
+make
+sudo make install
+
+Note the install is hardcoded to /usr, you can also run sfxr from the build
+dir after make (./sfxr) without installing.
+

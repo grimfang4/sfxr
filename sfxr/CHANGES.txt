@@ -20,3 +20,5 @@ sfxr-sdl-1.2.0
 * Sound now plays when an attribute is clicked (a more involved change, like looping, would be needed for dragging)
 * Sound now plays on waveform change
 * Very simple undo (one slider change) with Z
+* Removed GTK save/load dialog
+* Added CMake build

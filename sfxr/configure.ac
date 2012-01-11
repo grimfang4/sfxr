@@ -6,8 +6,7 @@ AC_INIT([sfxr], [1.2.0], [grimfang4@gmail.com],[sfxr-1.2.0.tar],[http://code.goo
 AM_INIT_AUTOMAKE(sfxr, 1.2.0)
 AM_CONFIG_HEADER(config.h:config.in)
 
-AC_CONFIG_SRCDIR([sdlkit.h])
-# AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([source/sdlkit.h])
 
 
 # Checks for programs.
@@ -32,8 +31,6 @@ AC_HEADER_STDBOOL
 AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([atexit memset pow])
-
-#AC_CONFIG_FILES([Makefile])
 
 
 
