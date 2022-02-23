@@ -1,9 +1,9 @@
 AUTOMAKE_OPTIONS = foreign
 
-CFLAGS = --pedantic -Wall -O2
-CXXFLAGS=$(CFLAGS) `sdl-config --cflags`
+CFLAGS = --pedantic -Wall -O2 -g
+CXXFLAGS=$(CFLAGS) `sdl2-config --cflags`
 CPPFLAGS=-DDATADIR='$(pkgdatadir)'
-LDFLAGS=`sdl-config --libs`
+LDFLAGS=`sdl2-config --libs`
 
 bin_PROGRAMS = sfxr
 
