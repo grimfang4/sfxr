@@ -1,0 +1,17 @@
+sfxr
+*.o
+.deps/
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+compile
+config.h
+config.in
+config.log
+config.status
+configure
+depcomp
+install-sh
+missing
+stamp-h1
