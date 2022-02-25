@@ -183,7 +183,7 @@ void ResetParams()
 	p_lpf_ramp=0.0f;
 	p_hpf_freq=0.0f;
 	p_hpf_ramp=0.0f;
-	
+
 	p_pha_offset=0.0f;
 	p_pha_ramp=0.0f;
 
@@ -199,7 +199,7 @@ bool LoadSettings(char* filename)
 	FILE* file=fopen(filename, "rb");
 	if(!file)
 		return false;
-	
+
 	size_t n;
 	(void)n;
 	int version=0;
@@ -236,7 +236,7 @@ bool LoadSettings(char* filename)
 	n = fread(&p_lpf_ramp, 1, sizeof(float), file);
 	n = fread(&p_hpf_freq, 1, sizeof(float), file);
 	n = fread(&p_hpf_ramp, 1, sizeof(float), file);
-	
+
 	n = fread(&p_pha_offset, 1, sizeof(float), file);
 	n = fread(&p_pha_ramp, 1, sizeof(float), file);
 
@@ -287,7 +287,7 @@ bool SaveSettings(char* filename)
 	fwrite(&p_lpf_ramp, 1, sizeof(float), file);
 	fwrite(&p_hpf_freq, 1, sizeof(float), file);
 	fwrite(&p_hpf_ramp, 1, sizeof(float), file);
-	
+
 	fwrite(&p_pha_offset, 1, sizeof(float), file);
 	fwrite(&p_pha_ramp, 1, sizeof(float), file);
 
@@ -407,7 +407,7 @@ void SynthSample(int length, float* buffer, FILE* file)
 		if(period<8) period=8;
 		square_duty+=square_slide;
 		if(square_duty<0.0f) square_duty=0.0f;
-		if(square_duty>0.5f) square_duty=0.5f;		
+		if(square_duty>0.5f) square_duty=0.5f;
 		// volume envelope
 		env_time++;
 		if(env_time>env_length[env_stage])
@@ -546,7 +546,7 @@ static void SDLAudioCallback(void *userdata, Uint8 *stream, int len)
 	{
 		unsigned int l = len/2;
 		float* fbuf = new float[l];
-		memset(fbuf, 0, sizeof(fbuf));
+		memset(fbuf, 0, sizeof(float) * l);
 		SynthSample(l, fbuf, NULL);
 		while (l--)
 		{
@@ -613,7 +613,7 @@ bool ExportWAV(const char* filename)
 	dword=file_sampleswritten*wav_bits/8;
 	fwrite(&dword, 1, 4, foutput); // chunk size (data)
 	fclose(foutput);
-	
+
 	return true;
 }
 
@@ -951,7 +951,7 @@ void DrawScreen()
 	DrawBar(110, 0, 2, 480, 0x000000);
 	DrawText(font, 120, 10, 0x504030, "MANUAL SETTINGS");
 	DrawSprite(ld48, 8, 440, 0, 0xB0A080);
-	
+
 
 	bool do_play=false;
 
@@ -1120,9 +1120,9 @@ void DrawScreen()
 	int xpos=350;
 
 	DrawBar(xpos-190, ypos*18-5, 300, 2, 0x0000000);
-	
+
 	float oldValue = 0;
-	
+
 	oldValue = p_env_attack;
 	if(Slider(xpos, (ypos++)*18, p_env_attack, false, "ATTACK TIME"))
 	{

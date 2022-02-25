@@ -40,7 +40,6 @@ typedef Uint16 WORD;
 
 
 extern Uint32 *ddkscreen32;
-extern Uint16 *ddkscreen16;
 extern int ddkpitch;
 
 
@@ -61,7 +60,7 @@ public:
 	~DPInput() {}
 	static void Update () {}
 
-	static bool KeyPressed(SDLKey key);
+	static bool KeyPressed(SDL_Keycode key);
 
 };
 

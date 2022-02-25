@@ -22,9 +22,9 @@
 
 #include "sdlkit.h"
 
-
 #include <stdio.h>
 #include <string.h>
+#include <set>
 
 void error (const char *file, unsigned int line, const char *msg)
 {
@@ -32,24 +32,37 @@ void error (const char *file, unsigned int line, const char *msg)
 	exit(1);
 }
 
+std::set< unsigned int > keys;
 
-bool keys[SDLK_LAST];
-
-bool DPInput::KeyPressed(SDLKey key)
+bool DPInput::KeyPressed(SDL_Keycode key)
 {
-	bool r = keys[key];
-	keys[key] = false;
+	bool r = (keys.find(key) != keys.end());
+	keys.erase(key);
 	return r;
 }
 
 Uint32 *ddkscreen32;
-Uint16 *ddkscreen16;
 int ddkpitch;
 int mouse_x, mouse_y, mouse_px, mouse_py;
 bool mouse_left = false, mouse_right = false, mouse_middle = false;
 bool mouse_leftclick = false, mouse_rightclick = false, mouse_middleclick = false;
 
+SDL_Window *sdlwindow = NULL;
+SDL_Renderer *sdlrenderer = NULL;
 SDL_Surface *sdlscreen = NULL;
+
+static void sdlflip() {
+
+	SDL_Texture *sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlscreen);
+	if (!sdltexture) return;
+
+    SDL_SetRenderDrawColor(sdlrenderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_RenderClear(sdlrenderer);
+    SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
+    SDL_RenderPresent(sdlrenderer);
+
+    SDL_DestroyTexture(sdltexture);
+}
 
 void sdlupdate ()
 {
@@ -75,7 +88,6 @@ bool ddkLock ()
 			return false;
 	}
 	ddkpitch = sdlscreen->pitch / (sdlscreen->format->BitsPerPixel == 32 ? 4 : 2);
-	ddkscreen16 = (Uint16*)(sdlscreen->pixels);
 	ddkscreen32 = (Uint32*)(sdlscreen->pixels);
 	return true;
 }
@@ -90,8 +102,9 @@ void ddkUnlock ()
 
 void ddkSetMode (int width, int height, int bpp, int refreshrate, int fullscreen, const char *title)
 {
-	VERIFY(sdlscreen = SDL_SetVideoMode(width, height, bpp, fullscreen ? SDL_FULLSCREEN : 0));
-	SDL_WM_SetCaption(title, title);
+	VERIFY(0 == SDL_CreateWindowAndRenderer(width, height, fullscreen ? SDL_WINDOW_FULLSCREEN : 0, &sdlwindow, &sdlrenderer));
+	VERIFY(sdlscreen = SDL_CreateRGBSurface(0, width, height, bpp, 0, 0, 0, 0));
+	SDL_SetWindowTitle (sdlwindow, title);
 }
 
 #include <string.h>
@@ -121,10 +134,10 @@ std::list<std::string> ioList(const std::string& dirname, bool directories, bool
 	using namespace std;
     list<string> dirList;
     list<string> fileList;
-    
+
     DIR* dir = opendir(dirname.c_str());
     dirent* entry;
-    
+
     while ((entry = readdir(dir)) != NULL)
     {
         #ifdef WIN32
@@ -139,15 +152,15 @@ std::list<std::string> ioList(const std::string& dirname, bool directories, bool
         else if(files)
             fileList.push_back(entry->d_name);
     }
- 
+
     closedir(dir);
-    
+
     dirList.sort();
     fileList.sort();
-    
+
     fileList.splice(fileList.begin(), dirList);
-    
-    
+
+
     return fileList;
 }
 
@@ -167,7 +180,7 @@ std::string stoupper(const std::string& s)
 	std::string result = s;
 	std::string::iterator i = result.begin();
 	std::string::iterator end = result.end();
-	
+
 	while(i != end)
 	{
 		*i = std::toupper((unsigned char)*i);
@@ -179,14 +192,15 @@ std::string stoupper(const std::string& s)
 
 bool ioExists(const std::string& filename)
 {
-    return (access(filename.c_str(), 0) == 0);
+    struct stat FileStat;
+    return (0 == stat (filename.c_str (), &FileStat));
 }
 
 bool ioNew(const std::string& filename, bool readable, bool writeable)
 {
     if(ioExists(filename))
         return false;
-    
+
     FILE* file = fopen(filename.c_str(), "wb");
     if(file == NULL)
         return false;
@@ -205,11 +219,9 @@ extern Spriteset font;
 std::string new_file(const std::string& forced_extension)
 {
 	using namespace std;
-	SDL_EnableUNICODE(1);
-	SDL_EnableKeyRepeat(0, 0);
-	
+
 	string result;
-	
+
 	bool done = false;
 	SDL_Event e;
 	while (!done)
@@ -220,7 +232,7 @@ std::string new_file(const std::string& forced_extension)
 			{
 				case SDL_QUIT:
 					exit(0);
-		
+
 				case SDL_KEYDOWN:
 					if(e.key.keysym.sym == SDLK_ESCAPE)
 					{
@@ -231,37 +243,33 @@ std::string new_file(const std::string& forced_extension)
 						done = true;
 						break;
 					}
-					
-					{
-						char c = e.key.keysym.unicode;
-						if(0x21 <= c && c <= 0x7E)
-							result += c;
-					}
-		
+					break;
+
+				case SDL_TEXTINPUT:
+					result += e.text.text;
+					break;
+
 				default: break;
 			}
 		}
 		sdlupdate();
-		
+
 		ClearScreen(0xC0B090);
-		
+
 		DrawText(font, 90, 150, 0x000000, "TYPE NEW FILE NAME:");
 		DrawText(font, 100, 200, 0x000000, "%s", stoupper(result).c_str());
 
 		SDL_Delay(5);
-		
-		SDL_Flip(sdlscreen);
+
+		sdlflip();
 	}
-	
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableUNICODE(0);
-	
+
 	//if(result.size() == 0)
 	//	throw runtime_error("New file name is empty string.");
-	
+
 	if(result.size() < 6 || result.substr(result.size()-1 - 4, string::npos) != forced_extension)
 		result += forced_extension;
-	
+
 	return result;
 }
 
@@ -273,7 +281,7 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 
 	ClearScreen(0xC0B090);
 
-	
+
 	int i = 0, j = 0;
 	for(list<string>::iterator e = files.begin(); e != files.end(); e++)
 	{
@@ -290,13 +298,13 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 		}
 		i++;
 	}
-	
+
 	if(Button(10, 10, false, "CANCEL", 400))
 	{
 		gotFile = false;
 		done = true;
 	}
-	
+
 	if(showNewButton && Button(120, 10, false, "NEW FILE", 401))
 	{
 		string s = new_file(".sfxr");
@@ -304,7 +312,7 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 		{
 			ioNew(s, true, true);
 			files = ioList(".", false, true);
-			
+
 			for(list<string>::iterator e = files.begin(); e != files.end();)
 			{
 				if(e->find(".sfxr") == string::npos)
@@ -312,7 +320,7 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 					e = files.erase(e);
 					continue;
 				}
-				
+
 				e++;
 			}
 		}
@@ -328,12 +336,12 @@ void DrawFileSelectScreen(std::list<std::string>& files, char* buf, bool& gotFil
 bool select_file (char *buf, bool showNewButton)
 {
 	// FIXME: Needs directory browsing
-	
+
 	bool gotFile = false;
 	using namespace std;
 	list<string> files;
 	files = ioList(".", false, true);
-	
+
 	for(list<string>::iterator e = files.begin(); e != files.end();)
 	{
 		if(e->find(".sfxr") == string::npos)
@@ -341,10 +349,10 @@ bool select_file (char *buf, bool showNewButton)
 			e = files.erase(e);
 			continue;
 		}
-		
+
 		e++;
 	}
-	
+
 	bool done = false;
 	SDL_Event e;
 	while (!done)
@@ -354,19 +362,19 @@ bool select_file (char *buf, bool showNewButton)
 		{
 			case SDL_QUIT:
 				exit(0);
-	
+
 			case SDL_KEYDOWN:
-				keys[e.key.keysym.sym] = true;
-	
+				keys.insert(e.key.keysym.sym);
+
 			default: break;
 		}
 		sdlupdate();
-		
+
 		DrawFileSelectScreen(files, buf, gotFile, done, showNewButton);
 
 		SDL_Delay(5);
-		
-		SDL_Flip(sdlscreen);
+
+		sdlflip();
 	}
 	return gotFile;
 }
@@ -385,9 +393,9 @@ void sdlinit ()
 	if (!icon)
 		icon = SDL_LoadBMP("images/sfxr.bmp");
 	if (icon)
-		SDL_WM_SetIcon(icon, NULL);
+		SDL_SetWindowIcon(sdlwindow, icon);
 	atexit(sdlquit);
-	memset(keys, 0, sizeof(keys));
+	keys.clear();
 	ddkInit();
 }
 
@@ -401,16 +409,17 @@ void loop (void)
 		{
 			case SDL_QUIT:
 				exit(0);
-	
+
 			case SDL_KEYDOWN:
-				keys[e.key.keysym.sym] = true;
-	
+				keys.insert(e.key.keysym.sym);
+				break;
+
 			default: break;
 		}
 		sdlupdate();
 		if (!ddkCalcFrame())
 			return;
-		SDL_Flip(sdlscreen);
+		sdlflip();
 	}
 }
 
