@@ -22,7 +22,6 @@
 
 #include "sdlkit.h"
 
-
 #include <stdio.h>
 #include <string.h>
 #include <set>
@@ -33,11 +32,11 @@ void error (const char *file, unsigned int line, const char *msg)
 	exit(1);
 }
 
-std::set< bool > keys;
+std::set< unsigned int > keys;
 
 bool DPInput::KeyPressed(SDL_Keycode key)
 {
-	bool r = keys.find(key) != keys.end ();
+	bool r = (keys.find(key) != keys.end());
 	keys.erase(key);
 	return r;
 }
@@ -413,6 +412,7 @@ void loop (void)
 
 			case SDL_KEYDOWN:
 				keys.insert(e.key.keysym.sym);
+				break;
 
 			default: break;
 		}
